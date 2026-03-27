@@ -1,0 +1,132 @@
+#!/bin/bash
+
+COMMAND=$1
+
+case "$COMMAND" in
+
+  # ── Docker ────────────────────────────────
+  up)
+    docker compose up -d
+    ;;
+  down)
+    docker compose down
+    ;;
+  rapi)
+    docker compose restart api
+    ;;
+  rui)
+    docker compose restart ui
+    ;;
+  bash)
+    docker compose exec api bash
+    ;;
+
+  # ── Artisan ───────────────────────────────
+  migrate)
+    ./scripts/artisan migrate
+    ;;
+  clearc)
+    ./scripts/artisan cache:clear
+    ./scripts/artisan config:clear
+    ./scripts/artisan route:clear
+    ./scripts/artisan view:clear
+    ./scripts/artisan config:cache
+    echo "✅ All caches cleared and config rebuilt"
+    ;;
+
+  # ── Install ───────────────────────────────
+  installf)
+    if [[ -z "$2" ]]; then
+      echo "❌ Usage: encompass installf vendor/package"
+      exit 1
+    fi
+    ./scripts/composer require "$2"
+    ;;
+  installb)
+    if [[ -z "$2" ]]; then
+      echo "❌ Usage: encompass installb package-name"
+      exit 1
+    fi
+    ./scripts/npm install "$2"
+    ;;
+
+  # ── EAS Build ─────────────────────────────
+  bpi)
+    eas build --profile production --clear-cache --platform ios
+    ;;
+  bpa)
+    eas build --profile production --clear-cache --platform android
+    ;;
+  bpall)
+    eas build --profile production --clear-cache --platform ios
+    eas build --profile production --clear-cache --platform android
+    ;;
+  bvi)
+    eas build --profile preview --clear-cache --platform ios
+    ;;
+  bva)
+    eas build --profile preview --clear-cache --platform android
+    ;;
+  bdsi)
+    eas build --profile development-simulator --clear-cache --platform ios
+    ;;
+  bdi)
+    eas build --profile development --clear-cache --platform ios
+    ;;
+  bda)
+    eas build --profile development --clear-cache --platform android
+    ;;
+
+  # ── EAS Submit ────────────────────────────
+  spi)
+    eas submit -p ios --latest
+    ;;
+  spa)
+    eas submit -p android --latest
+    ;;
+
+  # ── Help ──────────────────────────────────
+  -l|--l|--list|--ls)
+    echo ""
+    echo "Encompass CLI — Available commands"
+    echo "─────────────────────────────────────────"
+    echo "  DOCKER"
+    echo "    up          docker compose up -d"
+    echo "    down        docker compose down"
+    echo "    rapi        Restart api container"
+    echo "    rui         Restart ui container"
+    echo "    bash        Direct Bash access"
+    echo ""
+    echo "  ARTISAN"
+    echo "    migrate     Run migrations"
+    echo "    clearc      Clear all caches + rebuild config"
+    echo ""
+    echo "  INSTALL"
+    echo "    installf vendor/package    Install PHP package via composer"
+    echo "    installb package-name      Install JS package via npm"
+    echo ""
+    echo "  BUILD"
+    echo "    bpi         Build production iOS"
+    echo "    bpa         Build production Android"
+    echo "    bpall       Build production iOS + Android"
+    echo "    bvi         Build preview iOS"
+    echo "    bva         Build preview Android"
+    echo "    bdsi        Build development simulator iOS"
+    echo "    bdi         Build development iOS"
+    echo "    bda         Build development Android"
+    echo ""
+    echo "  SUBMIT"
+    echo "    spi         Submit latest iOS build"
+    echo "    spa         Submit latest Android build"
+    echo ""
+    echo "  HELP"
+    echo "    -l, --l, --list, --ls    Show this list"
+    echo "─────────────────────────────────────────"
+    echo ""
+    ;;
+
+  *)
+    echo "❌ Unknown command: '$COMMAND'"
+    echo "   Run 'encompass --list' to see available commands"
+    ;;
+esac
