@@ -4,7 +4,9 @@ DOTFILES=~/dotfiles
 
 # copy configs
 cp -r ~/.config/nvim $DOTFILES
+rm -rf $DOTFILES/nvim/.git
 cp -r ~/.config/LazyVim $DOTFILES
+rm -rf $DOTFILES/LazyVim/.git
 cp -r ~/.config/wezterm $DOTFILES
 cp -r ~/.config/tmux $DOTFILES
 cp -r ~/bin $DOTFILES/bin
