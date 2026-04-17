@@ -67,20 +67,31 @@ Convention: mirror the source folder name. `~/.config/ghostty` → `dotfiles/gho
 
 ### 2. Edit `bin/dotfiles.sh` (the push script)
 
-Two edits, both inside this file:
+Two-to-three edits, all inside this file:
 
 **(a)** Add a `cp -r` line alongside the existing ones:
 
 ```bash
 cp -r ~/.config/nvim     $DOTFILES
+rm -rf $DOTFILES/nvim/.git
 cp -r ~/.config/LazyVim  $DOTFILES
+rm -rf $DOTFILES/LazyVim/.git
 cp -r ~/.config/wezterm  $DOTFILES
 cp -r ~/.config/tmux     $DOTFILES
 cp -r ~/.config/ghostty  $DOTFILES      # <- new
 cp -r ~/bin              $DOTFILES/bin
 ```
 
-**(b)** Add the folder name to the `for dir in …` loop so it gets its own commit:
+**(b)** If the source config has its own nested `.git` directory (check with `ls ~/.config/<tool>/.git`), add a strip line right after the `cp -r`:
+
+```bash
+cp -r ~/.config/ghostty  $DOTFILES
+rm -rf $DOTFILES/ghostty/.git           # <- only if the config is its own git repo
+```
+
+Without this, git will treat the nested `.git` as a submodule and refuse to track the real files. `nvim/` and `LazyVim/` both need this; `wezterm/` and `tmux/` don't.
+
+**(c)** Add the folder name to the `for dir in …` loop so it gets its own commit:
 
 ```bash
 for dir in nvim LazyVim wezterm tmux ghostty; do
@@ -122,9 +133,11 @@ ln -sf ~/dotfiles/ghostty ~/.config/ghostty
 
 - **`cp` overwrites, doesn't merge.** If you edit a file in `~/dotfiles/ghostty` directly and forget to mirror it in `~/.config/ghostty`, the next `dots` run will overwrite your repo change. Always edit the live path (`~/.config/ghostty/...`), not the repo copy.
 - **The repo tracks `cp`s, not symlinks — on the source machine.** The installer creates symlinks, but the push script does plain copies. That's why step 4 works even if you already symlinked — `cp -r` follows the symlink and writes real files into the repo.
+- **Nested `.git` directories.** If a config like `nvim/` or `LazyVim/` is its own git repo, the `cp -r` will pull the `.git` in with it, and the outer repo will try to treat it as a submodule. Always add a `rm -rf $DOTFILES/<tool>/.git` line right after the `cp -r` for any such config.
 - **Lockfiles.** If the tool has a lockfile (e.g. `lazy-lock.json`), decide whether to commit it (reproducible across machines) or `.gitignore` it (fresh resolve per machine). Default is: commit it.
 - **Secrets.** Don't add anything with API keys or tokens. Add a `.gitignore` entry at the repo root or inside the subfolder before the first `dots` run.
 - **First install on a machine with existing config.** `dotfiles-install.sh` runs `rm -rf` on the target. If a machine has uncommitted work in that folder, commit or back it up first.
+- **Keep `~/bin/dotfiles.sh` a symlink.** If it ever becomes a standalone copy (happens if something ran `cp` instead of `ln`), edits to `bin/dotfiles.sh` in the repo won't take effect. Verify with `ls -la ~/bin/dotfiles.sh` — you should see `->`. Fix: `rm ~/bin/dotfiles.sh && ln -sf ~/dotfiles/bin/dotfiles.sh ~/bin/dotfiles.sh`.
 
 ### Removing a synced config
 
